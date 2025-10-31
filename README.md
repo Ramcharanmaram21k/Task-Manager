@@ -22,10 +22,25 @@ Welcome to my Task Manager web app! This is my take on the classic productivity 
 - **RESTful API:** For smooth, modern data flow
 - **Deployed on Vercel:** So you can use it live, no code required!
 
-## ⚡ Try It Live
+## ⚡ Getting Started Locally
+Want to run the app on your system? Here are the steps:
+### 1. Clone the repository
+git clone https://github.com/Ramcharanmaram21k/Task-Manager.git
 
-> The app is hosted on Vercel:
-> **[Live Demo Link](your-vercel-link-here)**
+
+### 2. Start the backend API
+cd Backend
+npm install
+npm run dev
+This runs the server at `http://localhost:3001` and creates an SQLite database file in the backend folder.
+
+### 3. Start the frontend (React app)
+Open a second terminal window or tab:
+cd Frontend
+npm install
+npm run dev
+This opens the app at `http://localhost:5173` (or similar).
+
 
 ## 📚 About This Project
 
