@@ -1,0 +1,148 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+./* App.css */
+
+body {
+    margin: 0;
+    font-family: "Inter", sans-serif;
+    background-color: #0f0f14;
+    color: #e0e0e0;
+}
+
+.app-container {
+    width: 600px;
+    max-width: 90%;
+    margin: 50px auto;
+    text-align: center;
+}
+
+h2 {
+    font-size: 1.8rem;
+    color: #f8f8f8;
+    margin-bottom: 20px;
+}
+
+.insight-bar {
+    background: #191932;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    color: #d6d6ff;
+}
+
+form {
+    background: #14142b;
+    padding: 18px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input,
+textarea,
+select {
+    background-color: #1f1f3a;
+    color: #eee;
+    border: 1px solid #2b2b4a;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.95rem;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: #6366f1;
+    outline: none;
+}
+
+button {
+    background-color: #22c55e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s;
+}
+
+button:hover {
+    background-color: #16a34a;
+}
+
+.error {
+    color: #f87171;
+    font-size: 0.9rem;
+}
+
+.filters {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.filters select,
+.filters button {
+    background-color: #1e1e33;
+    color: #e0e0ff;
+    border: 1px solid #2b2b4a;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.task-item {
+    background-color: #161630;
+    border: 1px solid #2b2b4a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 15px;
+    text-align: left;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.task-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+}
+
+.task-item b {
+    color: #fff;
+    font-size: 1.05rem;
+}
+
+.task-item i {
+    color: #a5b4fc;
+}
+
+.task-item small {
+    color: #9ca3af;
+}
+
+.task-item button {
+    background-color: #3b82f6;
+    margin-right: 6px;
+    margin-top: 8px;
+}
+
+.task-item button:hover {
+    background-color: #2563eb;
+}
+
+.task-item button:last-child {
+    background-color: #8b5cf6;
+}
+
+.task-item button:last-child:hover {
+    background-color: #7c3aed;
+}
