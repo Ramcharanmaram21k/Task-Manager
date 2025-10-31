@@ -1,3 +1,6 @@
+<img width="1243" height="828" alt="image" src="https://github.com/user-attachments/assets/5f578d8c-c021-4dbc-9875-d8c004453c4d" />
+
+
 # 🚀 Task Manager – THworks Assignment
 
 Welcome to my Task Manager web app! This is my take on the classic productivity tool, built for the THworks full-stack JavaScript challenge. You can add, update, analyze, and even delete your tasks—all in a clean, modern, fast interface.
