@@ -29,16 +29,16 @@ git clone https://github.com/Ramcharanmaram21k/Task-Manager.git
 
 
 ### 2. Start the backend API
-- **cd Backend
-- **npm install
-- **npm run dev
+- cd Backend
+- npm install
+- npm run dev
 This runs the server at `http://localhost:3001` and creates an SQLite database file in the backend folder.
 
 ### 3. Start the frontend (React app)
 Open a second terminal window or tab:
-cd Frontend
-npm install
-npm run dev
+- cd Frontend
+- npm install
+- npm run dev
 This opens the app at `http://localhost:5173` (or similar).
 
 
