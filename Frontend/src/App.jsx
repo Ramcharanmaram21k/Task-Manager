@@ -14,7 +14,8 @@ const TrashIcon = () => (
 );
 
 
-const API = "http://localhost:3001";
+const API = import.meta.env.VITE_API_BASE;
+
 
 function App() {
     const [tasks, setTasks] = useState([]);
