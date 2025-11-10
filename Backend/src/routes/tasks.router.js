@@ -3,10 +3,6 @@ const router = express.Router();
 const db = require('../db/db');
 
 // Create a task
-const express = require('express');
-const router = express.Router();
-const db = require('../db/db');
-
 router.post('/', (req, res) => {
     const { title, description, priority, due_date } = req.body;
     if (!title || !priority || !due_date) {
@@ -25,8 +21,6 @@ router.post('/', (req, res) => {
         res.status(500).json({ error: 'Failed to create task' });
     }
 });
-
-// The rest of your routes remain as before, including the Array.isArray(tasks) fix!
 
 // Delete a task
 router.delete('/:id', (req, res) => {
