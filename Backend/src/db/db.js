@@ -1,6 +1,5 @@
-const Database = require('better-sqlite3');
-
-const db = new Database('./task_manager.db');
+const sqlite3 = require('sqlite3').verbose();
+const db = new sqlite3.Database('task_manager.db');
 
 // Make sure our table exists, even if this script is run twice
 db.exec(`
