@@ -3,23 +3,30 @@ const router = express.Router();
 const db = require('../db/db');
 
 // Create a task
+const express = require('express');
+const router = express.Router();
+const db = require('../db/db');
+
 router.post('/', (req, res) => {
     const { title, description, priority, due_date } = req.body;
     if (!title || !priority || !due_date) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
     try {
+        // Ensure 'status' field is always set to "Open"
         const stmt = db.prepare(`
-            INSERT INTO tasks (title, description, priority, due_date)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO tasks (title, description, priority, due_date, status)
+            VALUES (?, ?, ?, ?, ?)
         `);
-        const info = stmt.run(title, description || '', priority, due_date);
+        const info = stmt.run(title, description || '', priority, due_date, 'Open');
         const newTask = db.prepare('SELECT * FROM tasks WHERE id=?').get(info.lastInsertRowid);
         res.status(201).json(newTask);
     } catch (err) {
         res.status(500).json({ error: 'Failed to create task' });
     }
 });
+
+// The rest of your routes remain as before, including the Array.isArray(tasks) fix!
 
 // Delete a task
 router.delete('/:id', (req, res) => {
