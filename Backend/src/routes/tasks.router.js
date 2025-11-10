@@ -10,9 +10,9 @@ router.post('/', (req, res) => {
     }
     try {
         const stmt = db.prepare(`
-      INSERT INTO tasks (title, description, priority, due_date)
-      VALUES (?, ?, ?, ?)
-    `);
+            INSERT INTO tasks (title, description, priority, due_date)
+            VALUES (?, ?, ?, ?)
+        `);
         const info = stmt.run(title, description || '', priority, due_date);
         const newTask = db.prepare('SELECT * FROM tasks WHERE id=?').get(info.lastInsertRowid);
         res.status(201).json(newTask);
@@ -24,8 +24,6 @@ router.post('/', (req, res) => {
 // Delete a task
 router.delete('/:id', (req, res) => {
     const id = req.params.id;
-
-    //console.log("Attempting to delete ID:", id);
     try {
         const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
         if (result.changes === 0) {
@@ -36,9 +34,6 @@ router.delete('/:id', (req, res) => {
         res.status(500).json({ error: "Failed to delete task" });
     }
 });
-
-
-
 
 // Fetch all tasks (with optional filter/sort)
 router.get('/', (req, res) => {
@@ -55,7 +50,8 @@ router.get('/', (req, res) => {
     sql += " ORDER BY due_date ASC";
     try {
         const tasks = db.prepare(sql).all(...params);
-        res.json(tasks);
+        // Ensures backend **ALWAYS** returns an array (never an object)
+        res.json(Array.isArray(tasks) ? tasks : []);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch tasks' });
     }
