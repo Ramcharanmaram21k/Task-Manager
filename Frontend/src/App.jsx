@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import "./App.css";
 
-
 const TrashIcon = () => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -13,9 +12,12 @@ const TrashIcon = () => (
     </svg>
 );
 
-
 const API = import.meta.env.VITE_API_BASE;
 
+// --- ADD THIS HELPER FUNCTION AT THE TOP ---
+function safeMap(arr, fn) {
+    return Array.isArray(arr) ? arr.map(fn) : null;
+}
 
 function App() {
     const [tasks, setTasks] = useState([]);
@@ -38,7 +40,6 @@ function App() {
             setError("Failed to delete task");
         }
     }
-
 
     async function fetchTasks() {
         setLoading(true);
@@ -84,8 +85,13 @@ function App() {
                 <strong>Insights</strong>
                 <br/>
                 <span>{insights.summary}</span>
+                {/* --- OPTIONAL: Show a breakdown by priority, safe with helper --- */}
+                <div style={{marginTop: '6px'}}>
+                    {safeMap(insights.priority, p =>
+                        <div key={p.priority}>{p.priority}: {p.count}</div>
+                    )}
+                </div>
             </div>
-
 
             <form onSubmit={handleSubmit}>
                 <input placeholder="Title" name="title" value={form.title} onChange={handleFormChange} required />
@@ -138,8 +144,6 @@ function App() {
                                     onClick={() => deleteTask(t.id)}>
                                     <TrashIcon />
                                 </button>
-
-
                             </div>
                         </div>
                     )
