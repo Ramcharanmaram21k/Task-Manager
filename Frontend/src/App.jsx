@@ -13,11 +13,7 @@ const TrashIcon = () => (
 );
 
 const API = import.meta.env.VITE_API_BASE;
-
-// --- ADD THIS HELPER FUNCTION AT THE TOP ---
-function safeMap(arr, fn) {
-    return Array.isArray(arr) ? arr.map(fn) : null;
-}
+function safeMap(arr, fn) { return Array.isArray(arr) ? arr.map(fn) : null; }
 
 function App() {
     const [tasks, setTasks] = useState([]);
@@ -26,6 +22,7 @@ function App() {
     const [insights, setInsights] = useState({ summary: "" });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [loadError, setLoadError] = useState(false);
 
     function handleFormChange(e) {
         setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -43,17 +40,33 @@ function App() {
 
     async function fetchTasks() {
         setLoading(true);
+        setLoadError(false);
         let q = [];
         if (filters.status) q.push(`status=${filters.status}`);
         if (filters.priority) q.push(`priority=${filters.priority}`);
-        const res = await fetch(`${API}/tasks${q.length ? '?' + q.join('&') : ''}`);
-        setTasks(await res.json());
+        try {
+            const res = await fetch(`${API}/tasks${q.length ? '?' + q.join('&') : ''}`);
+            const data = await res.json();
+            if (Array.isArray(data)) {
+                setTasks(data);
+            } else {
+                setTasks([]);
+                setLoadError(true);
+            }
+        } catch {
+            setTasks([]);
+            setLoadError(true);
+        }
         setLoading(false);
     }
 
     async function fetchInsights() {
-        const res = await fetch(`${API}/insights`);
-        setInsights(await res.json());
+        try {
+            const res = await fetch(`${API}/insights`);
+            setInsights(await res.json());
+        } catch {
+            setInsights({ summary: "" });
+        }
     }
 
     useEffect(() => { fetchTasks(); fetchInsights(); }, [filters]);
@@ -83,10 +96,9 @@ function App() {
             <h2>Task Manager</h2>
             <div className="insight-bar">
                 <strong>Insights</strong>
-                <br/>
+                <br />
                 <span>{insights.summary}</span>
-                {/* --- OPTIONAL: Show a breakdown by priority, safe with helper --- */}
-                <div style={{marginTop: '6px'}}>
+                <div style={{ marginTop: '6px' }}>
                     {safeMap(insights.priority, p =>
                         <div key={p.priority}>{p.priority}: {p.count}</div>
                     )}
@@ -118,35 +130,37 @@ function App() {
                 <button onClick={fetchTasks}>Filter</button>
             </div>
 
-            {loading ? <div>Loading tasks...</div> :
-                tasks.length === 0 ? <div style={{ color: "#888" }}>No tasks found.</div> :
-                    tasks.map(t =>
-                        <div key={t.id} className="task-item">
-                            <b>{t.title}</b> — <i>{t.priority}</i> | <small>{t.status}</small>
-                            <br /><span style={{ color: "#bbb" }}>{t.description}</span>
-                            <div style={{ fontSize: 13, color: "#aaa", margin: "5px 0 2px" }}>
-                                Due: {t.due_date}
+            {loading ? <div>Loading tasks...</div>
+                : loadError
+                    ? <div style={{ color: "#f55" }}>Error loading tasks or backend down!</div>
+                    : (tasks.length === 0
+                        ? <div style={{ color: "#888" }}>No tasks found.</div>
+                        : safeMap(tasks, t =>
+                            <div key={t.id} className="task-item">
+                                <b>{t.title}</b> — <i>{t.priority}</i> | <small>{t.status}</small>
+                                <br /><span style={{ color: "#bbb" }}>{t.description}</span>
+                                <div style={{ fontSize: 13, color: "#aaa", margin: "5px 0 2px" }}>
+                                    Due: {t.due_date}
+                                </div>
+                                <div>
+                                    {t.status !== "Done" &&
+                                        <button onClick={() => updateTask(t.id, { status: "Done" })}>Mark Done</button>}
+                                    {t.status === "Open" &&
+                                        <button onClick={() => updateTask(t.id, { status: "In Progress" })}>Start</button>}
+                                    {t.status === "In Progress" &&
+                                        <button onClick={() => updateTask(t.id, { status: "Open" })}>Reopen</button>}
+                                    <button onClick={() => updateTask(t.id, { priority: t.priority === "High" ? "Medium" : "High" })}>
+                                        Toggle Priority
+                                    </button>
+                                    <button
+                                        aria-label="Delete"
+                                        style={{ background: "transparent", border: "none", color: "#ff5c5c", marginLeft: 6, cursor: "pointer" }}
+                                        onClick={() => deleteTask(t.id)}>
+                                        <TrashIcon />
+                                    </button>
+                                </div>
                             </div>
-                            <div>
-                                {t.status !== "Done" &&
-                                    <button onClick={() => updateTask(t.id, { status: "Done" })}>Mark Done</button>}
-                                {t.status === "Open" &&
-                                    <button onClick={() => updateTask(t.id, { status: "In Progress" })}>Start</button>}
-                                {t.status === "In Progress" &&
-                                    <button onClick={() => updateTask(t.id, { status: "Open" })}>Reopen</button>}
-                                <button onClick={() => updateTask(t.id, { priority: t.priority === "High" ? "Medium" : "High" })}>
-                                    Toggle Priority
-                                </button>
-
-                                <button
-                                    aria-label="Delete"
-                                    style={{ background: "transparent", border: "none", color: "#ff5c5c", marginLeft: 6, cursor: "pointer" }}
-                                    onClick={() => deleteTask(t.id)}>
-                                    <TrashIcon />
-                                </button>
-                            </div>
-                        </div>
-                    )
+                        ))
             }
         </div>
     );
