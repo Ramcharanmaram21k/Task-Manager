@@ -15,14 +15,14 @@ app.use(express.json());
 app.use(
     cors({
         origin: [
-            "http://localhost:5173",                  // Vite dev
-
-            "https://task-manager-f-sage.vercel.app"  // (ADD: actual new deployed frontend domain)
+            "http://localhost:5173", // for local dev
+            "https://task-manager-51w1t7vya-ramcharans-projects-90b10c9a.vercel.app"
         ],
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         credentials: true
     })
 );
+
 
 // Health
 app.get("/", (_req, res) => {
