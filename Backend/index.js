@@ -15,8 +15,9 @@ app.use(express.json());
 app.use(
     cors({
         origin: [
-            "http://localhost:5173",                 // Vite dev
-            "https://task-manager-f-iota.vercel.app"
+            "http://localhost:5173",                  // Vite dev
+
+            "https://task-manager-f-sage.vercel.app"  // (ADD: actual new deployed frontend domain)
         ],
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         credentials: true
