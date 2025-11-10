@@ -8,32 +8,27 @@ router.post('/', (req, res) => {
     if (!title || !priority || !due_date) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
-    try {
-        // Ensure 'status' field is always set to "Open"
-        const stmt = db.prepare(`
-            INSERT INTO tasks (title, description, priority, due_date, status)
-            VALUES (?, ?, ?, ?, ?)
-        `);
-        const info = stmt.run(title, description || '', priority, due_date, 'Open');
-        const newTask = db.prepare('SELECT * FROM tasks WHERE id=?').get(info.lastInsertRowid);
-        res.status(201).json(newTask);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to create task' });
-    }
+    db.run(
+        `INSERT INTO tasks (title, description, priority, due_date, status) VALUES (?, ?, ?, ?, ?)`,
+        [title, description || '', priority, due_date, 'Open'],
+        function (err) {
+            if (err) return res.status(500).json({ error: 'Failed to create task' });
+            db.get('SELECT * FROM tasks WHERE id = ?', [this.lastID], (err2, row) => {
+                if (err2) return res.status(500).json({ error: 'Failed to fetch created task' });
+                res.status(201).json(row);
+            });
+        }
+    );
 });
 
 // Delete a task
 router.delete('/:id', (req, res) => {
     const id = req.params.id;
-    try {
-        const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
-        if (result.changes === 0) {
-            return res.status(404).json({ error: "Task not found" });
-        }
+    db.run('DELETE FROM tasks WHERE id = ?', [id], function (err) {
+        if (err) return res.status(500).json({ error: "Failed to delete task" });
+        if (this.changes === 0) return res.status(404).json({ error: "Task not found" });
         res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to delete task" });
-    }
+    });
 });
 
 // Fetch all tasks (with optional filter/sort)
@@ -49,13 +44,10 @@ router.get('/', (req, res) => {
         params.push(req.query.priority);
     }
     sql += " ORDER BY due_date ASC";
-    try {
-        const tasks = db.prepare(sql).all(...params);
-        // Ensures backend **ALWAYS** returns an array (never an object)
-        res.json(Array.isArray(tasks) ? tasks : []);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch tasks' });
-    }
+    db.all(sql, params, (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch tasks' });
+        res.json(Array.isArray(rows) ? rows : []);
+    });
 });
 
 // Update a task (PATCH)
@@ -78,14 +70,13 @@ router.patch('/:id', (req, res) => {
     }
     sql += ' WHERE id = ?';
     params.push(id);
-
-    try {
-        db.prepare(sql).run(...params);
-        const updatedTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-        res.json(updatedTask);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to update task' });
-    }
+    db.run(sql, params, function (err) {
+        if (err) return res.status(500).json({ error: 'Failed to update task' });
+        db.get('SELECT * FROM tasks WHERE id = ?', [id], (err2, updatedTask) => {
+            if (err2) return res.status(500).json({ error: 'Failed to fetch updated task' });
+            res.json(updatedTask);
+        });
+    });
 });
 
 module.exports = router;
