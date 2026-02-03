@@ -1,169 +1,312 @@
-import React, { useEffect, useState } from 'react';
-import "./App.css";
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import './App.css';
+import {
+  bulkDeleteTasks,
+  bulkUpdateTasks,
+  createTask,
+  deleteTask,
+  fetchInsights,
+  fetchTasks,
+  reorderTasks,
+  updateTask,
+} from './api/tasks';
+import { useToast } from './components/ToastProvider';
+import TaskForm from './components/TaskForm';
+import TaskFilters from './components/TaskFilters';
+import InsightsBar from './components/InsightsBar';
+import TaskList from './components/TaskList';
+import TaskEditModal from './components/TaskEditModal';
+import ConfirmDialog from './components/ConfirmDialog';
+import SkeletonList from './components/SkeletonList';
+import EmptyState from './components/EmptyState';
+import SearchBar from './components/SearchBar';
+import BulkActionsBar from './components/BulkActionsBar';
+import AIInsights from './components/AIInsights';
 
-const TrashIcon = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-         stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-         style={{ verticalAlign: 'middle', marginLeft: 6 }}>
-        <polyline points="3 6 5 6 21 6" />
-        <path d="M19 6v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-        <line x1="10" y1="11" x2="10" y2="17" />
-        <line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-);
+const initialForm = {
+  title: '',
+  description: '',
+  priority: 'Medium',
+  due_date: '',
+  tags: '',
+};
 
-const API = import.meta.env.VITE_API_BASE;
-function safeMap(arr, fn) { return Array.isArray(arr) ? arr.map(fn) : null; }
+export default function App() {
+  const { addToast } = useToast();
+  const queryClient = useQueryClient();
+  const [filters, setFilters] = useState({ status: '', priority: '' });
+  const [search, setSearch] = useState('');
+  const [form, setForm] = useState(initialForm);
+  const [error, setError] = useState('');
+  const [activeTask, setActiveTask] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
 
-function App() {
-    const [tasks, setTasks] = useState([]);
-    const [filters, setFilters] = useState({ status: "", priority: "" });
-    const [form, setForm] = useState({ title: "", description: "", priority: "Medium", due_date: "" });
-    const [insights, setInsights] = useState({ summary: "" });
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [loadError, setLoadError] = useState(false);
+  const tasksQuery = useQuery({
+    queryKey: ['tasks', filters, search],
+    queryFn: () => fetchTasks({ ...filters, q: search }),
+  });
 
-    function handleFormChange(e) {
-        setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  const insightsQuery = useQuery({
+    queryKey: ['insights'],
+    queryFn: fetchInsights,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createTask,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      setForm(initialForm);
+      addToast('Task created', { type: 'success' });
+    },
+    onError: (err) => {
+      setError(err.message || 'Could not create task');
+      addToast('Failed to create task', { type: 'error' });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, updates }) => updateTask(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      addToast('Task updated', { type: 'success' });
+    },
+    onError: (err) => addToast(err.message || 'Failed to update task', { type: 'error' }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteTask(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      addToast('Task deleted', { type: 'success' });
+    },
+    onError: (err) => addToast(err.message || 'Failed to delete task', { type: 'error' }),
+  });
+
+  const bulkUpdateMutation = useMutation({
+    mutationFn: ({ ids, updates }) => bulkUpdateTasks(ids, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      addToast('Tasks updated', { type: 'success' });
+      setSelectedIds([]);
+    },
+    onError: (err) => addToast(err.message || 'Failed to update tasks', { type: 'error' }),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: (ids) => bulkDeleteTasks(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['insights'] });
+      addToast('Tasks deleted', { type: 'success' });
+      setSelectedIds([]);
+    },
+    onError: (err) => addToast(err.message || 'Failed to delete tasks', { type: 'error' }),
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: reorderTasks,
+    onError: (err) => addToast(err.message || 'Failed to reorder tasks', { type: 'error' }),
+  });
+
+  const tasks = useMemo(() => (Array.isArray(tasksQuery.data) ? tasksQuery.data : []), [tasksQuery.data]);
+  const hasTasks = tasks.length > 0;
+  const canReorder = !filters.status && !filters.priority && !search;
+
+  useEffect(() => {
+    setSelectedIds((current) => current.filter((id) => tasks.some((task) => task.id === id)));
+  }, [tasks]);
+
+  function handleFormChange(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    if (!form.title || !form.due_date || !form.priority) {
+      setError('Fill all required fields');
+      return;
     }
+    setError('');
+    createMutation.mutate({
+      title: form.title.trim(),
+      description: form.description.trim(),
+      priority: form.priority,
+      due_date: form.due_date,
+      tags: form.tags,
+    });
+  }
 
-    async function deleteTask(id) {
-        const res = await fetch(`${API}/tasks/${id}`, { method: "DELETE" });
-        if (res.ok) {
-            fetchTasks();
-            fetchInsights();
-        } else {
-            setError("Failed to delete task");
-        }
-    }
+  function handleUpdate(id, updates) {
+    updateMutation.mutate({ id, updates });
+  }
 
-    async function fetchTasks() {
-        setLoading(true);
-        setLoadError(false);
-        let q = [];
-        if (filters.status) q.push(`status=${filters.status}`);
-        if (filters.priority) q.push(`priority=${filters.priority}`);
-        try {
-            const res = await fetch(`${API}/tasks${q.length ? '?' + q.join('&') : ''}`);
-            const data = await res.json();
-            if (Array.isArray(data)) {
-                setTasks(data);
-            } else {
-                setTasks([]);
-                setLoadError(true);
-            }
-        } catch {
-            setTasks([]);
-            setLoadError(true);
-        }
-        setLoading(false);
-    }
+  function handleDeleteConfirmed() {
+    if (!pendingDelete) return;
+    deleteMutation.mutate(pendingDelete.id);
+    setPendingDelete(null);
+  }
 
-    async function fetchInsights() {
-        try {
-            const res = await fetch(`${API}/insights`);
-            setInsights(await res.json());
-        } catch {
-            setInsights({ summary: "" });
-        }
-    }
-
-    useEffect(() => { fetchTasks(); fetchInsights(); }, [filters]);
-
-    async function handleSubmit(e) {
-        e.preventDefault();
-        if (!form.title || !form.due_date || !form.priority) {
-            setError("Fill all required fields");
-            return;
-        }
-        setError("");
-        try {
-            await fetch(`${API}/tasks`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-            setForm({ title: "", description: "", priority: "Medium", due_date: "" });
-            fetchTasks();
-            fetchInsights();
-        } catch { setError("Could not create task"); }
-    }
-
-    async function updateTask(id, u) {
-        await fetch(`${API}/tasks/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(u) });
-        fetchTasks(); fetchInsights();
-    }
-
-    return (
-        <div className="app-container">
-            <h2>Task Manager</h2>
-            <div className="insight-bar">
-                <strong>Insights</strong>
-                <br />
-                <span>{insights.summary}</span>
-                <div style={{ marginTop: '6px' }}>
-                    {safeMap(insights.priority, p =>
-                        <div key={p.priority}>{p.priority}: {p.count}</div>
-                    )}
-                </div>
-            </div>
-
-            <form onSubmit={handleSubmit}>
-                <input placeholder="Title" name="title" value={form.title} onChange={handleFormChange} required />
-                <textarea rows={2} placeholder="Description" name="description" value={form.description} onChange={handleFormChange}></textarea>
-                <select name="priority" value={form.priority} onChange={handleFormChange} required>
-                    <option>Low</option><option>Medium</option><option>High</option>
-                </select>
-                <input type="date" name="due_date" value={form.due_date} onChange={handleFormChange} required />
-                <button>Add Task</button>
-                {error && <div className="error">{error}</div>}
-            </form>
-
-            <div className="filters">
-                <select value={filters.status} onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-                    <option value="">All Status</option>
-                    <option>Open</option>
-                    <option>In Progress</option>
-                    <option>Done</option>
-                </select>
-                <select value={filters.priority} onChange={e => setFilters(f => ({ ...f, priority: e.target.value }))}>
-                    <option value="">All Priority</option>
-                    <option>Low</option><option>Medium</option><option>High</option>
-                </select>
-                <button onClick={fetchTasks}>Filter</button>
-            </div>
-
-            {loading ? <div>Loading tasks...</div>
-                : loadError
-                    ? <div style={{ color: "#f55" }}>Error loading tasks or backend down!</div>
-                    : (tasks.length === 0
-                        ? <div style={{ color: "#888" }}>No tasks found.</div>
-                        : safeMap(tasks, t =>
-                            <div key={t.id} className="task-item">
-                                <b>{t.title}</b> — <i>{t.priority}</i> | <small>{t.status}</small>
-                                <br /><span style={{ color: "#bbb" }}>{t.description}</span>
-                                <div style={{ fontSize: 13, color: "#aaa", margin: "5px 0 2px" }}>
-                                    Due: {t.due_date}
-                                </div>
-                                <div>
-                                    {t.status !== "Done" &&
-                                        <button onClick={() => updateTask(t.id, { status: "Done" })}>Mark Done</button>}
-                                    {t.status === "Open" &&
-                                        <button onClick={() => updateTask(t.id, { status: "In Progress" })}>Start</button>}
-                                    {t.status === "In Progress" &&
-                                        <button onClick={() => updateTask(t.id, { status: "Open" })}>Reopen</button>}
-                                    <button onClick={() => updateTask(t.id, { priority: t.priority === "High" ? "Medium" : "High" })}>
-                                        Toggle Priority
-                                    </button>
-                                    <button
-                                        aria-label="Delete"
-                                        style={{ background: "transparent", border: "none", color: "#ff5c5c", marginLeft: 6, cursor: "pointer" }}
-                                        onClick={() => deleteTask(t.id)}>
-                                        <TrashIcon />
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-            }
-        </div>
+  function toggleSelection(taskId) {
+    setSelectedIds((current) =>
+      current.includes(taskId) ? current.filter((id) => id !== taskId) : [...current, taskId]
     );
-}
+  }
 
-export default App;
+  function handleBulkStatus(status) {
+    if (!status) return;
+    bulkUpdateMutation.mutate({ ids: selectedIds, updates: { status } });
+  }
+
+  function handleBulkPriority(priority) {
+    if (!priority) return;
+    bulkUpdateMutation.mutate({ ids: selectedIds, updates: { priority } });
+  }
+
+  function handleBulkDelete() {
+    bulkDeleteMutation.mutate(selectedIds);
+  }
+
+  function handleReorder(orderedIds, orderedTasks) {
+    if (!canReorder) return;
+    queryClient.setQueryData(['tasks', filters, search], orderedTasks);
+    reorderMutation.mutate(orderedIds);
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="hero-copy">
+          <p className="eyebrow">Task Manager</p>
+          <h1>Plan, execute, and track work.</h1>
+          <p className="subhead">Now with labels, subtasks, search, and bulk actions.</p>
+          <div className="hero-tags">
+            <span>Design clarity</span>
+            <span>Rapid execution</span>
+            <span>AI-powered prep</span>
+          </div>
+        </div>
+        <div className="hero-card">
+          <div className="hero-metric">
+            <span>Open tasks</span>
+            <strong>{insightsQuery.data?.openTasks ?? 0}</strong>
+          </div>
+          <div className="hero-metric">
+            <span>Due soon</span>
+            <strong>{insightsQuery.data?.dueSoon ?? 0}</strong>
+          </div>
+          <div className="hero-summary">
+            {insightsQuery.data?.summary || 'Your workspace is ready for the next sprint.'}
+          </div>
+        </div>
+      </header>
+
+      <main className="app-grid">
+        <section className="left-column">
+          <TaskForm
+            form={form}
+            error={error}
+            onChange={handleFormChange}
+            onSubmit={handleSubmit}
+            isSubmitting={createMutation.isPending}
+          />
+          <InsightsBar insights={insightsQuery.data || { summary: '' }} />
+          <AIInsights
+            onApply={(parsed) => {
+              setForm((current) => ({
+                ...current,
+                title: parsed.title || current.title,
+                description: parsed.description || current.description,
+                priority: parsed.priority || current.priority,
+                due_date: parsed.due_date || current.due_date,
+                tags: parsed.tags?.join(', ') || current.tags,
+              }));
+            }}
+          />
+        </section>
+
+        <section className="right-column" aria-label="Task list">
+          <div className="section-title">
+            <h2>Task runway</h2>
+            <p>Focus the work that matters next.</p>
+          </div>
+          <SearchBar value={search} onChange={setSearch} onClear={() => setSearch('')} />
+          <TaskFilters
+            filters={filters}
+            onChange={(patch) => setFilters((current) => ({ ...current, ...patch }))}
+            onApply={tasksQuery.refetch}
+          />
+          {!canReorder ? (
+            <p className="muted">Reordering is available only when filters and search are cleared.</p>
+          ) : null}
+
+          <BulkActionsBar
+            selectedCount={selectedIds.length}
+            onClear={() => setSelectedIds([])}
+            onBulkStatus={handleBulkStatus}
+            onBulkPriority={handleBulkPriority}
+            onBulkDelete={handleBulkDelete}
+          />
+
+          {tasksQuery.isLoading ? (
+            <SkeletonList />
+          ) : tasksQuery.isError ? (
+            <EmptyState
+              title="We couldn't load tasks"
+              description="The backend might be offline. Try again once it's running."
+              action={
+                <button type="button" className="secondary-button" onClick={() => tasksQuery.refetch()}>
+                  Retry
+                </button>
+              }
+            />
+          ) : !hasTasks ? (
+            <EmptyState
+              title="No tasks yet"
+              description="Add your first task to see it appear here."
+            />
+          ) : (
+            <TaskList
+              tasks={tasks}
+              onUpdate={handleUpdate}
+              onDelete={(task) => setPendingDelete(task)}
+              onEdit={(task) => setActiveTask(task)}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
+              onReorder={handleReorder}
+              dragDisabled={!canReorder}
+            />
+          )}
+        </section>
+      </main>
+
+      <TaskEditModal
+        task={activeTask}
+        isOpen={Boolean(activeTask)}
+        onClose={() => setActiveTask(null)}
+        onSave={(updates) => {
+          if (!activeTask) return;
+          handleUpdate(activeTask.id, updates);
+          setActiveTask(null);
+        }}
+      />
+
+      <ConfirmDialog
+        isOpen={Boolean(pendingDelete)}
+        title="Delete this task?"
+        description={
+          pendingDelete ? `This will permanently remove \"${pendingDelete.title}\".` : ''
+        }
+        confirmText="Delete task"
+        onConfirm={handleDeleteConfirmed}
+        onCancel={() => setPendingDelete(null)}
+      />
+    </div>
+  );
+}

@@ -1,68 +1,62 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "Plus Jakarta Sans", "Sora", "Segoe UI", sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --bg: #0b0d17;
+  --bg-2: #0f1528;
+  --surface: #11182e;
+  --surface-2: #0d1426;
+  --border: #1f2a4d;
+  --border-strong: #2b3963;
+  --text: #eef2ff;
+  --text-muted: #b6bfd8;
+  --text-soft: #93a0c4;
+  --accent: #7aa2ff;
+  --accent-2: #a78bfa;
+  --accent-3: #3b5bdb;
+  --shadow: 0 24px 50px rgba(6, 10, 24, 0.45);
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --transition: 200ms ease;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
+  background:
+    radial-gradient(1200px 700px at 10% 0%, rgba(52, 74, 139, 0.55), transparent 55%),
+    radial-gradient(900px 700px at 80% 10%, rgba(99, 102, 241, 0.35), transparent 60%),
+    linear-gradient(180deg, #0b0d17 0%, #0a0c14 100%);
+  color: var(--text);
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+img {
+  max-width: 100%;
+  display: block;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
+a {
+  color: inherit;
+}
+
+button,
+input,
+textarea,
+select {
   font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+:focus-visible {
+  outline: 3px solid rgba(122, 162, 255, 0.5);
+  outline-offset: 2px;
 }
