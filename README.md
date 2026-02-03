@@ -1,4 +1,5 @@
-<img width="1243" height="828" alt="image" src="https://github.com/user-attachments/assets/5f578d8c-c021-4dbc-9875-d8c004453c4d" />
+<img width="1710" height="947" alt="image" src="https://github.com/user-attachments/assets/d896b95e-ebca-4df6-af01-b1936a9b1edf" />
+
 
 #Live Link
 - https://task-manager-tau-ivory.vercel.app
